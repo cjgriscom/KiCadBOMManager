@@ -143,6 +143,8 @@ public class BOMExport {
 		
 		System.out.println("Edit association table? (y/N)");
 		
+		System.out.println("Use /{designator} to search");
+		
 		if (in.nextLine().toLowerCase().startsWith("y")) {
 			System.out.println("Edit part number associations: ");
 			System.out.println();
