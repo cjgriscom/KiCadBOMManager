@@ -24,6 +24,18 @@ public class Module {
 		
 	}
 	
+	public Module(String referenceL, int referenceN, String footprint, String value,
+			double x, double y, double rot,
+			String layer,  boolean smd) {
+		this.referenceL = referenceL;
+		this.referenceN = referenceN;
+		this.footprint = footprint;
+		this.value = value;
+		this.x = x; this.y = y; this.rot = rot;
+		this.layer = layer;
+		this.smd = smd;
+	}
+	
 	private Node getType(Node src, String type, int paramMatchI, String paramMatch, boolean throwExp) {
 		for (Node n : src.nodes) {
 			if (n.type.equals(type)) {

@@ -79,22 +79,28 @@ public class BOMExport {
 		System.out.println("Loading...\n\n");
 		PropertyDB.forceSave(db);
 		
-		KiCADPCB pcb = new KiCADPCB(kicadPCB);
 		
 		TreeMap<String, ArrayList<Module>> modules = new TreeMap<>();
 		
-		for (Node n : pcb.root.nodes) {
-			if (n.type.equals("module")) {
-				Module m = new Module(n);
-				
-				boolean ignore = ignoreAll.contains(m.referenceL);
-				if (ignore) continue;
-
-				String uuid = getModuleID(m);
-				
-				
-				if (!modules.containsKey(uuid)) modules.put(uuid, new ArrayList<>());
-				modules.get(uuid).add(m);
+		if (kicadPCB.toString().endsWith(".rpt")) {
+			KiCADPCB.cvtRpt(kicadPCB);
+			System.exit(0);
+		} else {
+			KiCADPCB pcb = new KiCADPCB(kicadPCB);
+			
+			for (Node n : pcb.root.nodes) {
+				if (n.type.equals("module")) {
+					Module m = new Module(n);
+					
+					boolean ignore = ignoreAll.contains(m.referenceL);
+					if (ignore) continue;
+	
+					String uuid = getModuleID(m);
+					
+					
+					if (!modules.containsKey(uuid)) modules.put(uuid, new ArrayList<>());
+					modules.get(uuid).add(m);
+				}
 			}
 		}
 		
@@ -144,14 +150,29 @@ public class BOMExport {
 			boolean lockResp = false;
 			String shop = "";
 			
+			boolean skipToUnmapped = false;
+			String searchFor = "";
 			for (String s : modules.keySet()) {
 				System.out.println();
 				System.out.println(modules.get(s).size() + "x " + s);
-				if (idPartNumCache.get().containsKey(s)) System.out.println("Current assoc: " + idPartNumCache.get().get(s));
-				else System.out.println("Unmapped.");
+				if (!searchFor.isEmpty()) {
+					boolean found = false;
+					for (Module ref : modules.get(s)) {
+						if (searchFor.equalsIgnoreCase(ref.referenceL + ref.referenceN)) found = true;
+					}
+					if (!found) continue;
+					searchFor = "";
+				}
+				if (idPartNumCache.get().containsKey(s)) {
+					System.out.println("Current assoc: " + idPartNumCache.get().get(s));
+					if (skipToUnmapped) continue;
+				} else {
+					System.out.println("Unmapped.");
+					skipToUnmapped = false;
+				}
 				
 				if (!lockResp) {
-					System.out.print("(K)eep, (c)lear, (q)uit, (d)igikey, (m)ouser, (a)rrow, (n)ewark, macro(f)ab? ");
+					System.out.print("(K)eep, (c)lear, (s)kip to unmapped, (q)uit, (d)igikey, (m)ouser, (a)rrow, (n)ewark, macro(f)ab? ");
 					String resp = in.nextLine().trim();
 					if (resp.length() > 0 && Character.isUpperCase(resp.charAt(0))) lockResp = true;
 					resp = resp.toLowerCase();
@@ -165,6 +186,10 @@ public class BOMExport {
 						idPartNumCache.get().remove(s);
 					} else if (resp.startsWith("q")) {
 						break;
+					} else if (resp.startsWith("s")) {
+						skipToUnmapped = true;
+					} else if (resp.startsWith("/")) {
+						searchFor = resp.substring(1).trim();
 					}
 				}
 				
@@ -211,7 +236,7 @@ public class BOMExport {
 		
 		Path documentRoot = new File(kicadFile.get()).toPath();
 		exportRohs(in, documentRoot, modules, idPartNumCache.get());
-		//exportDigikey(in, documentRoot, modules, idPartNumCache.get());
+		exportDigikey(in, documentRoot, modules, idPartNumCache.get());
 		//exportSolder(in, documentRoot, modules, idPartNumCache.get());
 		exportMacrofab(in, documentRoot, modules, idPartNumCache.get());
 		
