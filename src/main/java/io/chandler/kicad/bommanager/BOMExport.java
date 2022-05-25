@@ -116,7 +116,6 @@ public class BOMExport {
 						kicadPCB.toPath().getParent().toFile(), 
 						kicadPCB.toPath().getFileName().toString() + "_componentsDB", 1, new TreeMap<>(), ErrorHandler.throwAll());
 
-		
 		System.out.println("Loaded " + idPartNumCache.get().size() + " cached part numbers.");
 		
 		// Clear unused
@@ -142,8 +141,6 @@ public class BOMExport {
 		System.out.println("Unmapped associations: " + unknownAssocs.size());
 		
 		System.out.println("Edit association table? (y/N)");
-		
-		System.out.println("Use /{designator} to search");
 		
 		if (in.nextLine().toLowerCase().startsWith("y")) {
 			System.out.println("Edit part number associations: ");
@@ -174,6 +171,7 @@ public class BOMExport {
 				}
 				
 				if (!lockResp) {
+					System.out.println("Use /{designator} to search");
 					System.out.print("(K)eep, (c)lear, (s)kip to unmapped, (q)uit, (d)igikey, (m)ouser, (a)rrow, (n)ewark, macro(f)ab? ");
 					String resp = in.nextLine().trim();
 					if (resp.length() > 0 && Character.isUpperCase(resp.charAt(0))) lockResp = true;
@@ -422,7 +420,13 @@ public class BOMExport {
 					manufPN = digikeyInfo.getJSONObject("PartDetails").getString("ManufacturerPartNumber");
 					manufName = digikeyInfo.getJSONObject("PartDetails").getJSONObject("ManufacturerName").getString("Text");
 				} else {
-					manufPN = partNum[1];
+					try {
+						manufPN = partNum[1];
+					} catch (RuntimeException e) {
+						System.err.println(uuid);
+						System.err.println(idPartNumCache.get(uuid));
+						throw e;
+					}
 				}
 			}
 			for (Module model : m) {
